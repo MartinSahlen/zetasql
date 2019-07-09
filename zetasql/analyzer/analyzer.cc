@@ -285,7 +285,7 @@ AnalyzerOptions::AnalyzerOptions()
 
 AnalyzerOptions::AnalyzerOptions(const LanguageOptions& language_options)
     : language_options_(language_options) {
-  CHECK(LoadTimeZone("America/Los_Angeles", &default_timezone_));
+  //CHECK(LoadTimeZone("America/Los_Angeles", &default_timezone_));
 }
 
 AnalyzerOptions::~AnalyzerOptions() {
