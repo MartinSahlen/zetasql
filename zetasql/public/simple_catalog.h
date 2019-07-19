@@ -120,6 +120,9 @@ class SimpleCatalog : public Catalog {
   // this catalog.
   void AddTable(const std::string& name, const Table* table) LOCKS_EXCLUDED(mutex_);
   void AddTable(const Table* table) LOCKS_EXCLUDED(mutex_);
+
+  //Alec Addition: If the table with name already exists, update name to point to table
+  void AddOrReplaceTable(const std::string& name, const Table* table) LOCKS_EXCLUDED(mutex_);
   // Same as above, but take ownership of the added object.
   void AddOwnedTable(const std::string& name, std::unique_ptr<const Table> table)
       LOCKS_EXCLUDED(mutex_);

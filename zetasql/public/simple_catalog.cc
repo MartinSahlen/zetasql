@@ -257,6 +257,12 @@ void SimpleCatalog::AddTable(const std::string& name, const Table* table) {
   zetasql_base::InsertOrDie(&tables_, absl::AsciiStrToLower(name), table);
 }
 
+void SimpleCatalog::AddOrReplaceTable(const std::string& name, const Table* table) {
+  absl::MutexLock l(&mutex_);
+  zetasql_base::InsertAndDeleteExisting(&tables_, absl::AsciiStrToLower(name), table);
+}
+
+
 void SimpleCatalog::AddModel(const std::string& name, const Model* model) {
   absl::MutexLock l(&mutex_);
   zetasql_base::InsertOrDie(&models_, absl::AsciiStrToLower(name), model);
