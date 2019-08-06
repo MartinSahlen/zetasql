@@ -23,7 +23,7 @@ load("@rules_foreign_cc//tools/build_defs:configure.bzl", "configure_make")
 licenses(["notice"])  # Apache v2.0
 
 package(
-    default_visibility = ["//visibility:public"],
+    default_visibility = ["//zetasql:__subpackages__"],
 )
 
 exports_files([

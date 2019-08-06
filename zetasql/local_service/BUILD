@@ -18,7 +18,8 @@ load("//:zetasql_grpc.bzl", "cc_grpc_library")
 load("@io_grpc_grpc_java//:java_grpc_library.bzl", "java_grpc_library")
 
 # ZetaSQL Server
-package(default_visibility = ["//zetasql:__subpackages__"])
+package(default_visibility = ["//visibility:public"],
+)
 
 cc_library(
     name = "local_service",
