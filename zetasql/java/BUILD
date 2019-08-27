@@ -17,8 +17,9 @@
 # Java API for ZetaSQL.
 
 package(
-    default_visibility = ["//zetasql:__subpackages__"],
+    default_visibility = ["//visibility:public"]
 )
+
 
 load("@google_bazel_common//tools/jarjar:jarjar.bzl", "jarjar_library")
 load("@google_bazel_common//tools/javadoc:javadoc.bzl", "javadoc_library")
