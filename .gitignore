@@ -2,3 +2,6 @@ bazel-*
 .vscode/
 Dockerfile
 .devcontainer.json
+Main.class
+Main.java
+jar_files

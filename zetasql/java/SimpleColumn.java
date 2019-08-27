@@ -31,7 +31,7 @@ public final class SimpleColumn implements Column, Serializable {
   private boolean isPseudoColumn;
   private boolean isWritableColumn;
 
-  SimpleColumn(
+  public SimpleColumn(
       String tableName, String name, Type type, boolean isPseudoColumn, boolean isWritableColumn) {
     this.name = name == null ? "" : name;
     this.fullName = String.format("%s.%s", tableName, name);
@@ -40,7 +40,7 @@ public final class SimpleColumn implements Column, Serializable {
     this.isWritableColumn = isWritableColumn;
   }
 
-  SimpleColumn(String tableName, String name, Type type) {
+  public SimpleColumn(String tableName, String name, Type type) {
     this(tableName, name, type, /* isPseudoColumn = */ false, /* isWritableColumn = */ true);
   }
 
