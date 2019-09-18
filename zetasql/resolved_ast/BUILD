@@ -16,6 +16,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
+
 load("//zetasql/resolved_ast:build_rules.bzl", "gen_resolved_ast_files")
 
 py_binary(

@@ -18,6 +18,7 @@
 
 #include <iostream>
 #include <memory>
+#include <thread>
 #include <type_traits>
 #include <utility>
 
@@ -36,16 +37,41 @@
 #include "zetasql/public/type.pb.h"
 #include "zetasql/resolved_ast/resolved_ast.h"
 #include "zetasql/resolved_ast/validator.h"
+#include "absl/flags/flag.h"
 #include "absl/memory/memory.h"
 #include "zetasql/base/map_util.h"
 #include "zetasql/base/source_location.h"
 #include "zetasql/base/ret_check.h"
 #include "zetasql/base/status_macros.h"
 
-namespace zetasql
-{
-namespace
-{
+ABSL_FLAG(bool, zetasql_validate_resolved_ast, true,
+          "Run validator on resolved AST before returning it.");
+
+// This provides a way to extract and look at the zetasql resolved AST
+// from within some other test or tool.  It prints to cout rather than logging
+// because the output is often too big to log without truncating.
+ABSL_FLAG(bool, zetasql_print_resolved_ast, false,
+          "Print resolved AST to stdout after resolving (for debugging)");
+
+namespace zetasql {
+
+bool StringVectorCaseLess::operator()(
+    const std::vector<std::string>& v1,
+    const std::vector<std::string>& v2) const {
+  auto common_length = std::min(v1.size(), v2.size());
+  for (int idx = 0; idx < common_length; ++idx) {
+    const int cmp = zetasql_base::StringCaseCompare(v1[idx], v2[idx]);
+    if (cmp < 0) return true;
+    if (cmp > 0) return false;
+    // Otherwise the strings compared equal, so compare the next array
+    // elements.
+  }
+  // The first <common_length> elements are equal, so if the array length
+  // of v1 < v2 then v1 is less.
+  return (v1.size() < v2.size());
+}
+
+namespace {
 
 // Verifies that the provided AnalyzerOptions have a valid combination of
 // settings.
@@ -115,6 +141,7 @@ const AnalyzerOptions &GetOptionsWithArenas(
 
 } // namespace
 
+<<<<<<< HEAD
 void AllowedHintsAndOptions::AddOption(const std::string &name, const Type *type)
 {
   ZETASQL_CHECK_OK(AddOptionImpl(name, type));
@@ -125,6 +152,16 @@ zetasql_base::Status AllowedHintsAndOptions::AddOptionImpl(
 {
   if (name.empty())
   {
+=======
+void AllowedHintsAndOptions::AddOption(const std::string& name,
+                                       const Type* type) {
+  ZETASQL_CHECK_OK(AddOptionImpl(name, type));
+}
+
+zetasql_base::Status AllowedHintsAndOptions::AddOptionImpl(const std::string& name,
+                                                   const Type* type) {
+  if (name.empty()) {
+>>>>>>> upstream/master
     return MakeSqlError() << "Option name should not be empty.";
   }
   if (!zetasql_base::InsertIfNotPresent(&options_lower, absl::AsciiStrToLower(name),
@@ -135,6 +172,7 @@ zetasql_base::Status AllowedHintsAndOptions::AddOptionImpl(
   return ::zetasql_base::OkStatus();
 }
 
+<<<<<<< HEAD
 void AllowedHintsAndOptions::AddHint(
     const std::string &qualifier, const std::string &name,
     const Type *type, bool allow_unqualified)
@@ -148,6 +186,19 @@ zetasql_base::Status AllowedHintsAndOptions::AddHintImpl(
 {
   if (name.empty())
   {
+=======
+void AllowedHintsAndOptions::AddHint(const std::string& qualifier,
+                                     const std::string& name, const Type* type,
+                                     bool allow_unqualified) {
+  ZETASQL_CHECK_OK(AddHintImpl(qualifier, name, type, allow_unqualified));
+}
+
+zetasql_base::Status AllowedHintsAndOptions::AddHintImpl(const std::string& qualifier,
+                                                 const std::string& name,
+                                                 const Type* type,
+                                                 bool allow_unqualified) {
+  if (name.empty()) {
+>>>>>>> upstream/master
     return MakeSqlError() << "Hint name should not be empty";
   }
   if (qualifier.empty() && !allow_unqualified)
@@ -186,10 +237,16 @@ zetasql_base::Status AllowedHintsAndOptions::Deserialize(
   for (const auto &qualifier : proto.disallow_unknown_hints_with_qualifier())
   {
     if (!zetasql_base::InsertIfNotPresent(
+<<<<<<< HEAD
             &(result->disallow_unknown_hints_with_qualifiers), qualifier))
     {
       return ::zetasql_base::UnknownErrorBuilder(ZETASQL_LOC) << "Duplicate qualifier:"
                                                               << qualifier;
+=======
+            &(result->disallow_unknown_hints_with_qualifiers), qualifier)) {
+      return ::zetasql_base::UnknownErrorBuilder()
+             << "Duplicate qualifier:" << qualifier;
+>>>>>>> upstream/master
     }
   }
   result->disallow_unknown_options = proto.disallow_unknown_options();
@@ -365,9 +422,27 @@ zetasql_base::Status AnalyzerOptions::Deserialize(
     ZETASQL_RETURN_IF_ERROR(result->AddQueryParameter(param.name(), type));
   }
 
+<<<<<<< HEAD
   for (const TypeProto &param_type : proto.positional_query_parameters())
   {
     const Type *type;
+=======
+  for (const auto& system_variable_proto : proto.system_variables()) {
+    std::vector<std::string> name_path;
+    for (const auto& path_part : system_variable_proto.name_path()) {
+      name_path.push_back(path_part);
+    }
+
+    const Type* type;
+    ZETASQL_RETURN_IF_ERROR(factory->DeserializeFromProtoUsingExistingPools(
+        system_variable_proto.type(), pools, &type));
+
+    ZETASQL_RETURN_IF_ERROR(result->AddSystemVariable(name_path, type));
+  }
+
+  for (const TypeProto& param_type : proto.positional_query_parameters()) {
+    const Type* type;
+>>>>>>> upstream/master
     ZETASQL_RETURN_IF_ERROR(factory->DeserializeFromProtoUsingExistingPools(
         param_type, pools, &type));
     ZETASQL_RETURN_IF_ERROR(result->AddPositionalQueryParameter(type));
@@ -439,8 +514,22 @@ zetasql_base::Status AnalyzerOptions::Serialize(
         param_proto->mutable_type(), map));
   }
 
+<<<<<<< HEAD
   for (const Type *param_type : positional_query_parameters_)
   {
+=======
+  for (const auto& system_variable : system_variables_) {
+    auto* system_variable_proto = proto->add_system_variables();
+    for (const std::string& path_part : system_variable.first) {
+      system_variable_proto->add_name_path(path_part);
+    }
+    ZETASQL_RETURN_IF_ERROR(
+        system_variable.second->SerializeToProtoAndDistinctFileDescriptors(
+            system_variable_proto->mutable_type(), map));
+  }
+
+  for (const Type* param_type : positional_query_parameters_) {
+>>>>>>> upstream/master
     ZETASQL_RETURN_IF_ERROR(param_type->SerializeToProtoAndDistinctFileDescriptors(
         proto->add_positional_query_parameters(), map));
   }
@@ -488,11 +577,48 @@ zetasql_base::Status AnalyzerOptions::Serialize(
   return ::zetasql_base::OkStatus();
 }
 
+<<<<<<< HEAD
 zetasql_base::Status AnalyzerOptions::AddQueryParameter(const std::string &name,
                                                         const Type *type)
 {
   if (type == nullptr)
   {
+=======
+zetasql_base::Status AnalyzerOptions::AddSystemVariable(
+    const std::vector<std::string>& name_path, const Type* type) {
+  if (type == nullptr) {
+    return MakeSqlError()
+           << "Type associated with system variable cannot be NULL";
+  }
+  if (name_path.empty()) {
+    return MakeSqlError() << "System variable cannot have empty name path";
+  }
+  for (const std::string& name_path_part : name_path) {
+    if (name_path_part.empty()) {
+      return MakeSqlError()
+             << "System variable cannot have empty std::string as path part";
+    }
+  }
+
+  if (!type->IsSupportedType(language())) {
+    return MakeSqlError() << "System variable " << absl::StrJoin(name_path, ".")
+                          << " has unsupported type: "
+                          << type->TypeName(language().product_mode());
+  }
+
+  if (!zetasql_base::InsertIfNotPresent(&system_variables_,
+                               std::make_pair(name_path, type))) {
+    return MakeSqlError() << "Duplicate system variable "
+                          << absl::StrJoin(name_path, ".");
+  }
+
+  return ::zetasql_base::OkStatus();
+}
+
+zetasql_base::Status AnalyzerOptions::AddQueryParameter(const std::string& name,
+                                                const Type* type) {
+  if (type == nullptr) {
+>>>>>>> upstream/master
     return MakeSqlError()
            << "Type associated with query parameter cannot be NULL";
   }
@@ -614,8 +740,13 @@ void AnalyzerOptions::SetDdlPseudoColumnsCallback(
   ddl_pseudo_columns_.clear();
 }
 void AnalyzerOptions::SetDdlPseudoColumns(
+<<<<<<< HEAD
     const std::vector<std::pair<std::string, const Type *>> &ddl_pseudo_columns)
 {
+=======
+    const std::vector<std::pair<std::string, const Type*>>&
+        ddl_pseudo_columns) {
+>>>>>>> upstream/master
   ddl_pseudo_columns_ = ddl_pseudo_columns;
   ddl_pseudo_columns_callback_ =
       [this](const std::vector<std::string> &table_name,
@@ -686,6 +817,19 @@ static zetasql_base::Status FinishAnalyzeStatementImpl(
 
   VLOG(3) << "Resolved AST:\n"
           << (*resolved_statement)->DebugString();
+
+  if (absl::GetFlag(FLAGS_zetasql_validate_resolved_ast)) {
+    Validator validator(options.language_options());
+    ZETASQL_RETURN_IF_ERROR(
+        validator.ValidateResolvedStatement(resolved_statement->get()));
+  }
+
+  if (absl::GetFlag(FLAGS_zetasql_print_resolved_ast)) {
+    std::cout << "Resolved AST from thread "
+              << std::this_thread::get_id()
+              << ":" << std::endl
+              << (*resolved_statement)->DebugString() << std::endl;
+  }
 
   if (options.language().error_on_deprecated_syntax() &&
       !resolver->deprecation_warnings().empty())
@@ -937,6 +1081,19 @@ static zetasql_base::Status AnalyzeExpressionFromParserASTImpl(
                                                     &resolved_expr));
   }
 
+  if (absl::GetFlag(FLAGS_zetasql_validate_resolved_ast)) {
+    Validator validator(options.language_options());
+    ZETASQL_RETURN_IF_ERROR(
+        validator.ValidateStandaloneResolvedExpr(resolved_expr.get()));
+  }
+
+  if (absl::GetFlag(FLAGS_zetasql_print_resolved_ast)) {
+    std::cout << "Resolved AST from thread "
+              << std::this_thread::get_id()
+              << ":" << std::endl
+              << resolved_expr->DebugString() << std::endl;
+  }
+
   if (options.language().error_on_deprecated_syntax() &&
       !resolver.deprecation_warnings().empty())
   {
@@ -1018,6 +1175,7 @@ zetasql_base::Status AnalyzeExpressionFromParserAST(
       options.error_message_mode(), sql, status);
 }
 
+<<<<<<< HEAD
 static zetasql_base::Status AnalyzeTypeImpl(
     const std::string &type_name,
     const AnalyzerOptions &options,
@@ -1025,6 +1183,12 @@ static zetasql_base::Status AnalyzeTypeImpl(
     TypeFactory *type_factory,
     const Type **output_type)
 {
+=======
+static zetasql_base::Status AnalyzeTypeImpl(const std::string& type_name,
+                                    const AnalyzerOptions& options,
+                                    Catalog* catalog, TypeFactory* type_factory,
+                                    const Type** output_type) {
+>>>>>>> upstream/master
   *output_type = nullptr;
 
   ZETASQL_RETURN_IF_ERROR(ValidateAnalyzerOptions(options));
@@ -1037,6 +1201,7 @@ static zetasql_base::Status AnalyzeTypeImpl(
   return ::zetasql_base::OkStatus();
 }
 
+<<<<<<< HEAD
 zetasql_base::Status AnalyzeType(
     const std::string &type_name,
     const AnalyzerOptions &options_in,
@@ -1044,6 +1209,11 @@ zetasql_base::Status AnalyzeType(
     TypeFactory *type_factory,
     const Type **output_type)
 {
+=======
+zetasql_base::Status AnalyzeType(const std::string& type_name,
+                         const AnalyzerOptions& options_in, Catalog* catalog,
+                         TypeFactory* type_factory, const Type** output_type) {
+>>>>>>> upstream/master
   std::unique_ptr<AnalyzerOptions> copy;
   const AnalyzerOptions &options = GetOptionsWithArenas(&options_in, &copy);
   const zetasql_base::Status status =
